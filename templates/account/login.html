@@ -1,0 +1,17 @@
+{% extends "account/base.html" %}
+{% load socialaccount %}
+
+{% block content %}
+<h1 style="text-align: center;">Sign In</h1>
+<p style="text-align: center;">Welcome back to vibing.</p>
+
+<form action="{% provider_login_url 'github' %}" method="post" style="margin-bottom: 1rem;">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="width: 100%; background-color: #333;">Continue with GitHub</button>
+</form>
+
+<form action="{% provider_login_url 'google' %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="width: 100%; background-color: #4285F4;">Continue with Google</button>
+</form>
+{% endblock %}

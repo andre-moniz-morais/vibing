@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibing - Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Montserrat+Alternates:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .account-container {
+            max-width: 480px;
+            margin: 80px auto;
+            padding: 2rem;
+        }
+        .account-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .account-card h1, .account-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+        .account-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        .account-card form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .account-card label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .account-card input[type="text"],
+        .account-card input[type="email"],
+        .account-card input[type="password"] {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .account-card input:focus {
+            border-color: var(--text-secondary);
+        }
+        .account-card button[type="submit"],
+        .account-card .btn {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 0.5rem;
+        }
+        .account-card a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .account-card a:hover {
+            color: var(--text-primary);
+        }
+        .account-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .account-card li {
+            margin-bottom: 0.5rem;
+        }
+        .account-card .errorlist {
+            color: #f44336;
+            font-size: 0.8rem;
+            list-style: none;
+            padding: 0;
+            margin: 0.25rem 0 0 0;
+        }
+        .account-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .account-logo span {
+            font-family: 'Montserrat Alternates', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="account-container">
+        <div class="account-logo">
+            <span>vibing</span>
+        </div>
+        <div class="account-card">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header" style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 700; margin: 0;">{{ workspace.name }} Settings</h1>
+    <p style="color: var(--text-secondary); margin-top: 0.5rem;">Manage workspace members and roles.</p>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 0.375rem; font-size: 0.875rem; {% if message.tags == 'success' %}background-color: rgba(76, 175, 80, 0.1); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.2);{% else %}background-color: rgba(244, 67, 54, 0.1); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.2);{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="cards-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+    <!-- Add Member Card -->
+    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem;">
+        <h3 style="margin-top:0; font-size:1.1rem; margin-bottom: 1rem;">Add Member</h3>
+        <form method="post" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Exact Username" required style="flex: 1; min-width: 150px; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-color); color: var(--text-primary); font-family: 'Montserrat', sans-serif; font-size: 0.875rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--text-secondary)'" onblur="this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; gap: 0.25rem; border: 1px solid var(--border-color); border-radius: 0.375rem; overflow: hidden;">
+                <label style="padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; background-color: var(--bg-color); color: var(--text-secondary);">
+                    <input type="radio" name="role" value="Admin" style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Admin
+                </label>
+                <label style="padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; background-color: var(--bg-color); color: var(--text-secondary);">
+                    <input type="radio" name="role" value="Editor" style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Editor
+                </label>
+                <label style="padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; background-color: var(--text-primary); color: var(--bg-color);">
+                    <input type="radio" name="role" value="Reader" checked style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Reader
+                </label>
+            </div>
+            <button type="submit" class="btn">Add</button>
+        </form>
+    </div>
+
+    <!-- Member List -->
+    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem;">
+        <h3 style="margin-top:0; font-size:1.1rem; margin-bottom: 1rem;">Current Members</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <th style="padding: 0.75rem 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">User</th>
+                    <th style="padding: 0.75rem 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">Role</th>
+                    <th style="padding: 0.75rem 0.5rem; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; width: 80px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in workspace.members.all %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem 0.5rem; font-size: 0.875rem;">{{ member.user.username }}</td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <span style="
+                            {% if member.role == 'Admin' %}
+                                background-color: rgba(17, 17, 17, 0.08); color: var(--text-primary); border: 1px solid var(--border-color);
+                            {% elif member.role == 'Editor' %}
+                                background-color: rgba(107, 107, 107, 0.1); color: var(--text-secondary); border: 1px solid var(--border-color);
+                            {% else %}
+                                background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color);
+                            {% endif %}
+                            padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;
+                        ">{{ member.role }}</span>
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                        {% if member.user != request.user %}
+                        <form method="post" action="{% url 'remove_workspace_member' workspace.id member.user.id %}" style="display: inline;" onsubmit="return confirm('Remove {{ member.user.username }} from this workspace?')">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; transition: all 0.15s;" onmouseover="this.style.color='#f44336'; this.style.backgroundColor='rgba(244,67,54,0.1)'" onmouseout="this.style.color='var(--text-secondary)'; this.style.backgroundColor='transparent'">✕ Remove</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Rename Workspace -->
+    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem;">
+        <h3 style="margin-top:0; font-size:1.1rem; margin-bottom: 1rem;">Rename Workspace</h3>
+        <form method="post" action="{% url 'rename_workspace' workspace.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
+            {% csrf_token %}
+            <input type="text" name="name" value="{{ workspace.name }}" required style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-color); color: var(--text-primary); font-family: 'Montserrat', sans-serif; font-size: 0.875rem; outline: none;" onfocus="this.style.borderColor='var(--text-secondary)'" onblur="this.style.borderColor='var(--border-color)'">
+            <button type="submit" class="btn">Rename</button>
+        </form>
+    </div>
+
+    <!-- Delete Workspace (Danger Zone) -->
+    <div style="background-color: var(--bg-card); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 0.5rem; padding: 1.5rem;">
+        <h3 style="margin-top:0; font-size:1.1rem; color: #f44336; margin-bottom: 0.5rem;">Danger Zone</h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">Deleting a workspace removes all its projects, stories, and data. This action cannot be undone.</p>
+        <form method="post" action="{% url 'delete_workspace' workspace.id %}" onsubmit="return confirm('This will permanently delete the workspace &quot;{{ workspace.name }}&quot; and ALL its projects. Are you sure?')">
+            {% csrf_token %}
+            <button type="submit" style="background-color: transparent; color: #f44336; border: 1px solid #f44336; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 0.85rem; font-weight: 600; transition: all 0.15s;" onmouseover="this.style.backgroundColor='#f44336'; this.style.color='#fff'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#f44336'">Delete Workspace</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
