@@ -67,6 +67,39 @@ def workspace_view(request, workspace_id):
         'can_create_project': can_create_project,
     })
 
+import os
+import subprocess
+import shutil
+from django.conf import settings
+
+def _clone_repository(user, project, repo_name):
+    token = user.github_token
+    if not token:
+        return False, "GitHub token missing."
+        
+    target_dir = os.path.join(settings.BASE_DIR, 'workspaces', str(project.workspace.id), str(project.id))
+    
+    if os.path.exists(target_dir):
+        shutil.rmtree(target_dir, ignore_errors=True)
+        
+    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+    
+    clone_url = f"https://oauth2:{token}@github.com/{repo_name}.git"
+    
+    try:
+        result = subprocess.run(
+            ['git', 'clone', '--depth', '1', clone_url, target_dir],
+            capture_output=True,
+            text=True,
+            timeout=3600
+        )
+        if result.returncode == 0:
+            return True, "Repository cloned successfully."
+        else:
+            return False, f"Git clone failed: {result.stderr}"
+    except Exception as e:
+        return False, f"Exception: {str(e)}"
+
 @login_required
 def create_project(request, workspace_id):
     workspace = get_object_or_404(Workspace, id=workspace_id)
@@ -75,13 +108,51 @@ def create_project(request, workspace_id):
         
     if request.method == 'POST':
         name = request.POST.get('name')
+        repo_action = request.POST.get('repo_action', 'none')
+        existing_repo = request.POST.get('existing_repo')
+        new_repo_name = request.POST.get('new_repo_name')
+        
         if name:
             project = Project.objects.create(
                 name=name,
                 workspace=workspace,
                 created_by=request.user
             )
-            messages.success(request, f'Project "{name}" created successfully.')
+            
+            repo_name = None
+            if repo_action == 'existing' and existing_repo:
+                repo_name = existing_repo
+            elif repo_action == 'new' and new_repo_name:
+                # Create the repository via GitHub API
+                token = request.user.github_token
+                if token:
+                    headers = {
+                        'Authorization': f'token {token}',
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                    data = {'name': new_repo_name, 'private': True, 'auto_init': True}
+                    import requests
+                    response = requests.post('https://api.github.com/user/repos', headers=headers, json=data)
+                    if response.status_code == 201:
+                        repo_name = response.json()['full_name']
+                    else:
+                        messages.error(request, f"Failed to create GitHub repository. Project created without repository.")
+                else:
+                    messages.error(request, "Please Re-authenticate with GitHub to create repositories.")
+            
+            if repo_name:
+                from core.models import ProjectRepository
+                ProjectRepository.objects.create(project=project, repository=repo_name)
+                
+                # Clone the repository locally
+                success, msg = _clone_repository(request.user, project, repo_name)
+                if not success:
+                    messages.warning(request, f'Project created, but repo clone failed: {msg}')
+                else:
+                    messages.success(request, f'Project "{name}" created and repository cloned successfully.')
+            else:
+                messages.success(request, f'Project "{name}" created successfully.')
+                
             return redirect('project_view', project_id=project.id)
             
     return redirect('workspace_view', workspace_id=workspace.id)
@@ -101,7 +172,7 @@ def project_view(request, project_id):
     if not has_workspace_access and not has_project_access:
         raise PermissionDenied("You do not have access to this project.")
         
-    stories = project.stories.all()
+    stories = project.stories.all().order_by('order')
     default_states = ['TODO', 'Develop', 'In review', 'Request changes', 'Done']
     
     # Determine user role (highest privilege wins)
@@ -216,6 +287,54 @@ def project_settings(request, project_id):
         return redirect('project_settings', project_id=project.id)
         
     return render(request, 'project_settings.html', {'project': project})
+
+@login_required
+def associate_repository(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    
+    has_workspace_admin = project.workspace.members.filter(user=request.user, role='Admin').exists()
+    has_project_admin = hasattr(project, 'members') and project.members.filter(user=request.user, role='Admin').exists()
+    if not has_workspace_admin and not has_project_admin:
+        raise PermissionDenied("Only admins can access project settings.")
+        
+    if request.method == 'POST':
+        repo_action = request.POST.get('repo_action', 'none')
+        existing_repo = request.POST.get('existing_repo')
+        new_repo_name = request.POST.get('new_repo_name')
+        
+        repo_name = None
+        if repo_action == 'existing' and existing_repo:
+            repo_name = existing_repo
+        elif repo_action == 'new' and new_repo_name:
+            token = request.user.github_token
+            if token:
+                headers = {
+                    'Authorization': f'token {token}',
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+                data = {'name': new_repo_name, 'private': True, 'auto_init': True}
+                import requests
+                response = requests.post('https://api.github.com/user/repos', headers=headers, json=data)
+                if response.status_code == 201:
+                    repo_name = response.json()['full_name']
+                else:
+                    messages.error(request, f"Failed to create GitHub repository.")
+            else:
+                messages.error(request, "Please Re-authenticate with GitHub to create repositories.")
+        
+        if repo_name:
+            from core.models import ProjectRepository
+            ProjectRepository.objects.filter(project=project).delete() # clear existing
+            ProjectRepository.objects.create(project=project, repository=repo_name)
+            
+            # Clone the repository locally
+            success, msg = _clone_repository(request.user, project, repo_name)
+            if not success:
+                messages.warning(request, f"Linked repository but clone failed: {msg}")
+            else:
+                messages.success(request, f"Successfully linked and cloned repository '{repo_name}' to project.")
+            
+    return redirect('project_settings', project_id=project.id)
 
 @login_required
 def remove_workspace_member(request, workspace_id, user_id):

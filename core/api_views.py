@@ -89,10 +89,7 @@ def upload_image(request):
     # Save using Django's default storage (S3 or local based on settings)
     saved_path = default_storage.save(filename, image)
     
-    if settings.USE_S3:
-        file_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{saved_path}"
-    else:
-        file_url = f"{settings.MEDIA_URL}{saved_path}"
+    file_url = default_storage.url(saved_path)
     
     return Response({
         'success': 1,
@@ -115,3 +112,26 @@ def update_story_order(request, project_id):
             story.save()
             
     return Response({'success': True})
+
+import requests
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_github_repos(request):
+    token = request.user.github_token
+    if not token:
+        return Response({'success': False, 'error': 'No GitHub token found. Please re-authenticate.'}, status=400)
+        
+    headers = {
+        'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    
+    response = requests.get('https://api.github.com/user/repos?per_page=100&sort=updated', headers=headers)
+    
+    if response.status_code == 200:
+        repos = [{'id': repo['id'], 'name': repo['full_name']} for repo in response.json()]
+        return Response({'success': True, 'repos': repos})
+    else:
+        return Response({'success': False, 'error': 'Failed to fetch repositories from GitHub.'}, status=response.status_code)
+

@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'channels',
     'core',
     'frontend',
+    'storages',
 ]
 
 AUTH_USER_MODEL = 'core.User'
@@ -189,19 +190,35 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 USE_S3 = env.bool('USE_S3', default=False)
 
 if USE_S3:
-    # AWS S3 configuration
     AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='eu-west-1')
-    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-    AWS_S3_FILE_OVERWRITE = False
+    
+    # MinIO default region is usually us-east-1
+    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-east-1') 
+
+    # MinIO specific settings
+    AWS_S3_ENDPOINT_URL = 'https://minio.andremorais.pt'
+    AWS_S3_CUSTOM_DOMAIN = f'minio.andremorais.pt/{AWS_STORAGE_BUCKET_NAME}'
+    AWS_S3_ADDRESSING_STYLE = "path"
+
+    # By setting this to True S3Boto3Storage skips `head_object` which fails in Cloudflare for .png files
+    AWS_S3_FILE_OVERWRITE = True
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
 
-    # Use S3 for media files
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+    # Place uploaded files in a media/ folder inside the bucket
+    AWS_LOCATION = 'media'
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
 else:
     # Local file system
     MEDIA_URL = '/media/'

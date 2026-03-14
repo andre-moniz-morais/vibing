@@ -208,3 +208,6 @@ __marimo__/
 /media
 /staticfiles
 dump.rdb
+/workspaces
+/uploads
+.DS_Store

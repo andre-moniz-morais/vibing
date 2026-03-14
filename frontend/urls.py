@@ -14,6 +14,7 @@ urlpatterns = [
     path('workspace/<int:workspace_id>/project/create/', views.create_project, name='create_project'),
     path('project/<int:project_id>/', views.project_view, name='project_view'),
     path('project/<int:project_id>/settings/', views.project_settings, name='project_settings'),
+    path('project/<int:project_id>/associate-repository/', views.associate_repository, name='associate_repository'),
     path('project/<int:project_id>/rename/', views.rename_project, name='rename_project'),
     path('project/<int:project_id>/delete/', views.delete_project, name='delete_project'),
     path('project/<int:project_id>/remove-member/<int:user_id>/', views.remove_project_member, name='remove_project_member'),
