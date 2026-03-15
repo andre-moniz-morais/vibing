@@ -2,18 +2,18 @@
 {% load socialaccount %}
 
 {% block content %}
-<div class="dashboard-header" style="margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; font-weight: 700; margin: 0;">Settings</h1>
-    <p style="color: var(--text-secondary); margin-top: 0.5rem;">Manage your integrations and preferences.</p>
+<div class="dashboard-header">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">Manage your integrations and preferences.</p>
 </div>
 
-<div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+<div class="cards-grid">
     <!-- Google Integration Card -->
-    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <div class="card card-shadow">
         <h3 style="margin-top:0; font-size:1.25rem; display: flex; align-items: center; gap: 0.5rem;">
             🤖 Gemini CLI Integration
         </h3>
-        <p style="color:var(--text-secondary); margin-bottom:1.5rem;">Connect your Google account to enable parallel async AI execution using the Gemini local CLI.</p>
+        <p class="section-subtitle">Connect your Google account to enable parallel async AI execution using the Gemini local CLI.</p>
         
         {% if user.google_token %}
             <div style="color: var(--success-color); font-weight: 600; margin-bottom: 1rem;">

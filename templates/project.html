@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="project-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start;">
+<div class="dashboard-header">
     <div>
-        <h1 style="font-size: 2rem; font-weight: 700; margin: 0;">{{ project.name }}</h1>
-        <p style="color: var(--text-secondary); margin-top: 0.5rem;">Workspace: {{ project.workspace.name }}</p>
+        <h1 class="page-title">{{ project.name }}</h1>
+        <p class="page-subtitle">Workspace: {{ project.workspace.name }}</p>
     </div>
-    {% if is_project_admin %}<a href="{% url 'project_settings' project.id %}" class="btn" style="background-color: var(--bg-card); color: var(--text-color); border: 1px solid var(--border-color); text-decoration: none;">⚙️ Settings</a>{% endif %}
+    {% if is_project_admin %}<a href="{% url 'project_settings' project.id %}" class="btn" class="btn btn-outline">⚙️ Settings</a>{% endif %}
 </div>
 
-<div class="tabs" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 2rem;">
-    <button class="tab-btn active" data-tab="info" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); font-weight: 600;">Info</button>
-    <button class="tab-btn" data-tab="backlog" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: var(--text-secondary); font-weight: 500;">Backlog</button>
-    <button class="tab-btn" data-tab="kanban" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: var(--text-secondary); font-weight: 500;">Kanban</button>
+<div class="tabs-container">
+    <button class="tab-btn active" data-tab="info" >Info</button>
+    <button class="tab-btn" data-tab="backlog" >Backlog</button>
+    <button class="tab-btn" data-tab="kanban" >Kanban</button>
 </div>
 
 <!-- Info Tab (Editor.js) -->
@@ -47,29 +47,29 @@
                 {% endif %}
             </div>
         </div>
-        <table style="width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; text-align: left;" id="backlog-table">
+        <table class="story-table" id="backlog-table">
             <thead>
                 <tr style="color: var(--text-secondary);">
                     {% if can_edit %}<th style="width: 30px;"></th>{% endif %}
-                    <th style="padding: 0.75rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">ID</th>
-                    <th style="padding: 0.75rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Title</th>
-                    <th style="padding: 0.75rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">State</th>
-                    <th style="padding: 0.75rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; width: 60px;">Pts</th>
-                    <th style="padding: 0.75rem 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Assignees</th>
+                    <th >ID</th>
+                    <th >Title</th>
+                    <th >State</th>
+                    <th style="width: 60px;">Pts</th>
+                    <th >Assignees</th>
                 </tr>
             </thead>
             <tbody>
                 {% for story in stories %}
-                <tr style="background-color: var(--bg-card); transition: background-color 0.2s, box-shadow 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" class="story-row" {% if can_edit %}draggable="true"{% endif %} data-story-id="{{ story.id }}" data-state="{{ story.state }}" data-assignees="{% for a in story.assignees.all %}{{ a.user.username }} {% endfor %}" onmouseenter="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'" onmouseleave="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)'">
+                <tr  class="story-row" {% if can_edit %}draggable="true"{% endif %} data-story-id="{{ story.id }}" data-state="{{ story.state }}" data-assignees="{% for a in story.assignees.all %}{{ a.user.username }} {% endfor %}" >
                     {% if can_edit %}
-                    <td style="padding: 0.75rem 0.25rem; text-align: center; cursor: grab; color: var(--text-secondary); width: 30px; border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem;" class="drag-handle" title="Drag to reorder">
+                    <td class="drag-handle" style="width:30px; text-align:center; cursor:grab;" title="Drag to reorder">
                         ⋮⋮
                     </td>
                     {% endif %}
                     <td style="padding: 0.75rem 0.75rem; {% if not can_edit %}border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem;{% endif %}">
                         <a href="{% url 'story_view' story.id %}" style="font-weight: 600; color: var(--primary-color); text-decoration: none; font-size: 0.85rem;">{{ story.user_story_id }}</a>
                     </td>
-                    <td style="padding: 0.75rem 0.75rem;">
+                    <td>
                         {% if can_edit %}
                         <input type="text" value="{{ story.content.title|default:'Untitled Story' }}" data-story-id="{{ story.id }}" class="story-title-input" style="border: none; background: transparent; color: var(--text-primary); font-size: 0.875rem; width: 100%; padding: 0.25rem 0; outline: none; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderBottomColor='var(--border-color)'" onblur="this.style.borderBottomColor='transparent'">
                         {% else %}
@@ -77,33 +77,32 @@
                         {% endif %}
                     </td>
                     <td style="padding: 0.75rem 0.75rem;" class="story-state">
-                        <span style="
+                        <span class="badge 
                             {% if story.state == 'TODO' %}
-                                background-color: rgba(107, 107, 107, 0.1); color: var(--text-secondary); border: 1px solid var(--border-color);
+                                status-todo
                             {% elif story.state == 'Develop' %}
-                                background-color: rgba(33, 150, 243, 0.1); color: #2196F3; border: 1px solid rgba(33, 150, 243, 0.3);
+                                status-develop
                             {% elif story.state == 'In review' %}
-                                background-color: rgba(255, 152, 0, 0.1); color: #FF9800; border: 1px solid rgba(255, 152, 0, 0.3);
+                                status-review
                             {% elif story.state == 'Request changes' %}
-                                background-color: rgba(244, 67, 54, 0.1); color: #F44336; border: 1px solid rgba(244, 67, 54, 0.3);
+                                status-request
                             {% elif story.state == 'Done' %}
-                                background-color: rgba(76, 175, 80, 0.1); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.3);
+                                status-done
                             {% else %}
-                                background-color: transparent; color: var(--text-secondary); border: 1px solid var(--border-color);
+                                badge-reader
                             {% endif %}
-                            padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.7rem; font-weight: 600; display: inline-block;
                         ">
                             {{ story.state }}
                         </span>
                     </td>
-                    <td style="padding: 0.75rem 0.75rem;">
+                    <td>
                         {% if can_edit %}
                         <input type="number" min="0" value="{{ story.story_points }}" data-story-id="{{ story.id }}" class="story-points-input" style="width: 40px; padding: 0.25rem 0; border: none; background: transparent; color: var(--text-primary); font-size: 0.875rem; text-align: center; outline: none; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderBottomColor='var(--border-color)'" onblur="this.style.borderBottomColor='transparent'">
                         {% else %}
                         <span style="font-size: 0.875rem;">{{ story.story_points }}</span>
                         {% endif %}
                     </td>
-                    <td style="padding: 0.75rem 0.75rem; position: relative; border-top-right-radius: 0.75rem; border-bottom-right-radius: 0.75rem;">
+                    <td style="position: relative;">
                         {% if can_edit %}
                         <div class="assignee-dropdown" data-story-id="{{ story.id }}">
                             <div class="dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -144,11 +143,11 @@
 
 <!-- Kanban Tab -->
 <div id="tab-kanban" class="tab-content" style="display: none;">
-    <div style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start;">
+    <div class="kanban-board">
         {% for state in default_states %}
-        <div class="kanban-column" data-state="{{ state }}" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; min-width: 250px; flex: 1; padding: 1rem; min-height: 400px; display: flex; flex-direction: column;">
-            <h4 style="margin-top: 0; color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">{{ state }}</h4>
-            <div class="kanban-items" data-state="{{ state }}" style="flex: 1; overflow-y: auto; min-height: 50px;">
+        <div class="kanban-column" data-state="{{ state }}" >
+            <h4 class="kanban-col-title">{{ state }}</h4>
+            <div class="kanban-items" data-state="{{ state }}" >
                 {% for story in stories %}
                     {% if story.state == state %}
                     <div class="kanban-card" {% if can_edit %}draggable="true"{% endif %} data-story-id="{{ story.id }}" style="
