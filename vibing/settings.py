@@ -147,6 +147,17 @@ DATABASES = {
     }
 }
 
+USE_PG = env.bool('USE_PG', default=False)
+if USE_PG:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('PG_NAME', default=''),
+        'USER': env('PG_USER', default=''),
+        'PASSWORD': env('PG_PASSWORD', default=''),
+        'HOST': env('PG_HOST', default=''),
+        'PORT': env('PG_PORT', default='5432'),
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
