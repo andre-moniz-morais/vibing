@@ -1,0 +1,12 @@
+{% extends "account/base.html" %}
+{% load socialaccount %}
+
+{% block content %}
+<h1 style="text-align: center;">Sign In</h1>
+<p style="text-align: center;">Welcome back to vibing.</p>
+
+<form action="{% provider_login_url 'github' %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="width: 100%;">Continue with GitHub</button>
+</form>
+{% endblock %}

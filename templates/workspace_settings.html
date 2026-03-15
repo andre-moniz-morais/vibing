@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="page-title">{{ workspace.name }} Settings</h1>
+    <p class="page-subtitle">Manage workspace members and roles.</p>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success"{% else %}alert-danger"{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="cards-grid-single">
+    <!-- Add Member Card -->
+    <div class="card">
+        <h3 class="section-title">Add Member</h3>
+        <form method="post" class="form-row">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Exact Username" required class="form-input form-input-sm" style="min-width: 150px;">
+            <div class="role-selector">
+                <label class="role-label">
+                    <input type="radio" name="role" value="Admin" style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Admin
+                </label>
+                <label class="role-label">
+                    <input type="radio" name="role" value="Editor" style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Editor
+                </label>
+                <label class="role-label active">
+                    <input type="radio" name="role" value="Reader" checked style="display: none;" onchange="this.closest('div').querySelectorAll('label').forEach(l => {l.style.backgroundColor='var(--bg-color)'; l.style.color='var(--text-secondary)'}); this.parentElement.style.backgroundColor='var(--text-primary)'; this.parentElement.style.color='var(--bg-color)'">
+                    Reader
+                </label>
+            </div>
+            <button type="submit" class="btn">Add</button>
+        </form>
+    </div>
+
+    <!-- Member List -->
+    <div class="card">
+        <h3 class="section-title">Current Members</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th style="width: 80px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in workspace.members.all %}
+                <tr>
+                    <td>{{ member.user.username }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if member.role == 'Admin' %}
+                                badge-admin
+                            {% elif member.role == 'Editor' %}
+                                badge-editor
+                            {% else %}
+                                badge-reader
+                            {% endif %}
+                        ">{{ member.role }}</span>
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                        {% if member.user != request.user %}
+                        <form method="post" action="{% url 'remove_workspace_member' workspace.id member.user.id %}" style="display: inline;" onsubmit="return confirm('Remove {{ member.user.username }} from this workspace?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-text-danger">✕ Remove</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Rename Workspace -->
+    <div class="card">
+        <h3 class="section-title">Rename Workspace</h3>
+        <form method="post" action="{% url 'rename_workspace' workspace.id %}" class="form-row">
+            {% csrf_token %}
+            <input type="text" name="name" value="{{ workspace.name }}" required style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-color); color: var(--text-primary); font-family: 'Montserrat', sans-serif; font-size: 0.875rem; outline: none;" onfocus="this.style.borderColor='var(--text-secondary)'" onblur="this.style.borderColor='var(--border-color)'">
+            <button type="submit" class="btn">Rename</button>
+        </form>
+    </div>
+
+    <!-- Delete Workspace (Danger Zone) -->
+    <div class="card card-danger">
+        <h3 class="section-title text-danger">Danger Zone</h3>
+        <p class="page-subtitle">Deleting a workspace removes all its projects, stories, and data. This action cannot be undone.</p>
+        <form method="post" action="{% url 'delete_workspace' workspace.id %}" onsubmit="return confirm('This will permanently delete the workspace &quot;{{ workspace.name }}&quot; and ALL its projects. Are you sure?')">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger-outline">Delete Workspace</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

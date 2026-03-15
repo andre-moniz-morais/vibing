@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">{{ project.name }}</h1>
+        <p class="page-subtitle">Workspace: {{ project.workspace.name }}</p>
+    </div>
+    {% if is_project_admin %}<a href="{% url 'project_settings' project.id %}" class="btn" class="btn btn-outline">⚙️ Settings</a>{% endif %}
+</div>
+
+<div class="tabs-container">
+    <button class="tab-btn active" data-tab="info" >Info</button>
+    <button class="tab-btn" data-tab="backlog" >Backlog</button>
+    <button class="tab-btn" data-tab="kanban" >Kanban</button>
+</div>
+
+<!-- Info Tab (Editor.js) -->
+<div id="tab-info" class="tab-content">
+    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 2rem; min-height: 500px;">
+        <div id="editorjs"></div>
+        <div id="editor-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1rem; text-align: right;"></div>
+    </div>
+</div>
+
+<!-- Backlog Tab -->
+<div id="tab-backlog" class="tab-content" style="display: none;">
+    <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 2rem; overflow: visible;">
+            <div style="display: flex; gap: 1rem; align-items: center; width: 100%;">
+                <h3 style="margin: 0; font-size: 1.25rem;">Backlog User Stories</h3>
+                
+                <div style="flex: 1; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    <select id="backlog-state-filter" style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-color); color: var(--text-primary); font-size: 0.8rem; outline: none;">
+                        <option value="">All States</option>
+                        {% for state in default_states %}
+                        <option value="{{ state }}">{{ state }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" id="backlog-assignee-filter" placeholder="Filter by Assignee..." style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: var(--bg-color); color: var(--text-primary); font-size: 0.8rem; outline: none; width: 150px;">
+                </div>
+                
+                {% if can_edit %}
+                <form action="{% url 'create_story' project.id %}" method="post" style="margin-left: 0.5rem;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="font-size: 0.875rem;">+ New Story</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <table class="story-table" id="backlog-table">
+            <thead>
+                <tr style="color: var(--text-secondary);">
+                    {% if can_edit %}<th style="width: 30px;"></th>{% endif %}
+                    <th >ID</th>
+                    <th >Title</th>
+                    <th >State</th>
+                    <th style="width: 60px;">Pts</th>
+                    <th >Assignees</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for story in stories %}
+                <tr  class="story-row" {% if can_edit %}draggable="true"{% endif %} data-story-id="{{ story.id }}" data-state="{{ story.state }}" data-assignees="{% for a in story.assignees.all %}{{ a.user.username }} {% endfor %}" >
+                    {% if can_edit %}
+                    <td class="drag-handle" style="width:30px; text-align:center; cursor:grab;" title="Drag to reorder">
+                        ⋮⋮
+                    </td>
+                    {% endif %}
+                    <td style="padding: 0.75rem 0.75rem; {% if not can_edit %}border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem;{% endif %}">
+                        <a href="{% url 'story_view' story.id %}" style="font-weight: 600; color: var(--primary-color); text-decoration: none; font-size: 0.85rem;">{{ story.user_story_id }}</a>
+                    </td>
+                    <td>
+                        {% if can_edit %}
+                        <input type="text" value="{{ story.content.title|default:'Untitled Story' }}" data-story-id="{{ story.id }}" class="story-title-input" style="border: none; background: transparent; color: var(--text-primary); font-size: 0.875rem; width: 100%; padding: 0.25rem 0; outline: none; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderBottomColor='var(--border-color)'" onblur="this.style.borderBottomColor='transparent'">
+                        {% else %}
+                        <a href="{% url 'story_view' story.id %}" style="color: var(--text-primary); text-decoration: none; font-size: 0.875rem;">{{ story.content.title|default:'Untitled Story' }}</a>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.75rem;" class="story-state">
+                        <span class="badge 
+                            {% if story.state == 'TODO' %}
+                                status-todo
+                            {% elif story.state == 'Develop' %}
+                                status-develop
+                            {% elif story.state == 'In review' %}
+                                status-review
+                            {% elif story.state == 'Request changes' %}
+                                status-request
+                            {% elif story.state == 'Done' %}
+                                status-done
+                            {% else %}
+                                badge-reader
+                            {% endif %}
+                        ">
+                            {{ story.state }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if can_edit %}
+                        <input type="number" min="0" value="{{ story.story_points }}" data-story-id="{{ story.id }}" class="story-points-input" style="width: 40px; padding: 0.25rem 0; border: none; background: transparent; color: var(--text-primary); font-size: 0.875rem; text-align: center; outline: none; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderBottomColor='var(--border-color)'" onblur="this.style.borderBottomColor='transparent'">
+                        {% else %}
+                        <span style="font-size: 0.875rem;">{{ story.story_points }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="position: relative;">
+                        {% if can_edit %}
+                        <div class="assignee-dropdown" data-story-id="{{ story.id }}">
+                            <div class="dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+                                <span class="selected-tags">
+                                    {% for assignee in story.assignees.all %}
+                                        <span class="assignee-tag">{{ assignee.user.username }}</span>
+                                    {% empty %}
+                                        <span style="color: var(--text-secondary); font-size: 0.8rem;">Assign...</span>
+                                    {% endfor %}
+                                </span>
+                                <span style="font-size: 0.6rem;">▼</span>
+                            </div>
+                            <div class="dropdown-menu">
+                                {% for member in workspace_members %}
+                                <div class="dropdown-item {% for assignee in story.assignees.all %}{% if assignee.user.id == member.user.id %}selected{% endif %}{% endfor %}" data-user-id="{{ member.user.id }}" data-username="{{ member.user.username }}">
+                                    <span class="check">✓</span>
+                                    {{ member.user.username }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                            {% for assignee in story.assignees.all %}{{ assignee.user.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 2rem 0.75rem; text-align: center; color: var(--text-secondary); border-radius: 0.75rem;">No user stories yet. Click "+ New Story" to create one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Kanban Tab -->
+<div id="tab-kanban" class="tab-content" style="display: none;">
+    <div class="kanban-board">
+        {% for state in default_states %}
+        <div class="kanban-column" data-state="{{ state }}" >
+            <h4 class="kanban-col-title">{{ state }}</h4>
+            <div class="kanban-items" data-state="{{ state }}" >
+                {% for story in stories %}
+                    {% if story.state == state %}
+                    <div class="kanban-card" {% if can_edit %}draggable="true"{% endif %} data-story-id="{{ story.id }}" style="
+                        {% if story.state == 'TODO' %}
+                            background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 3px solid var(--text-secondary);
+                        {% elif story.state == 'Develop' %}
+                            background-color: rgba(33, 150, 243, 0.04); border: 1px solid rgba(33, 150, 243, 0.2); border-left: 3px solid #2196F3;
+                        {% elif story.state == 'In review' %}
+                            background-color: rgba(255, 152, 0, 0.04); border: 1px solid rgba(255, 152, 0, 0.2); border-left: 3px solid #FF9800;
+                        {% elif story.state == 'Request changes' %}
+                            background-color: rgba(244, 67, 54, 0.04); border: 1px solid rgba(244, 67, 54, 0.2); border-left: 3px solid #F44336;
+                        {% elif story.state == 'Done' %}
+                            background-color: rgba(76, 175, 80, 0.04); border: 1px solid rgba(76, 175, 80, 0.2); border-left: 3px solid #4CAF50;
+                        {% else %}
+                            background-color: var(--bg-color); border: 1px solid var(--border-color); border-left: 3px solid var(--border-color);
+                        {% endif %}
+                        padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; {% if can_edit %}cursor: grab;{% endif %} box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); transition: opacity 0.2s, box-shadow 0.2s, transform 0.15s;"
+                        onmouseenter="this.style.boxShadow='0 3px 10px rgba(0,0,0,0.1)'; this.style.transform='translateY(-1px)'" onmouseleave="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)'; this.style.transform='none'">
+                        <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">{{ story.user_story_id }}</div>
+                        <div style="font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem;">{{ story.content.title|default:"Untitled Story" }}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+                            <span>{{ story.story_points }} pts</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Editor.js CDN (UMD builds) -->
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest/dist/editorjs.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest/dist/header.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest/dist/list.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest/dist/checklist.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest/dist/table.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest/dist/code.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest/dist/quote.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest/dist/delimiter.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest/dist/warning.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest/dist/image.umd.js"></script>
+
+{% load static %}
+<script src="{% static 'js/editor-init.js' %}"></script>
+
+{{ project.content|json_script:"project-data" }}
+{{ project.id|json_script:"project-id" }}
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const projectId = JSON.parse(document.getElementById('project-id').textContent);
+    const rawData = JSON.parse(document.getElementById('project-data').textContent || '{}');
+
+    // Tab switching with localStorage persistence
+    const tabStorageKey = `vibing_project_${projectId}_tab`;
+
+    function activateTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.style.color = 'var(--text-secondary)';
+            b.style.borderBottom = 'none';
+            b.style.fontWeight = '500';
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+
+        const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+        if (targetBtn) {
+            targetBtn.style.color = 'var(--primary-color)';
+            targetBtn.style.borderBottom = '2px solid var(--primary-color)';
+            targetBtn.style.fontWeight = '600';
+        }
+        const targetContent = document.getElementById('tab-' + tabName);
+        if (targetContent) targetContent.style.display = 'block';
+
+        localStorage.setItem(tabStorageKey, tabName);
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+
+    // Restore last visited tab on load
+    const savedTab = localStorage.getItem(tabStorageKey);
+    if (savedTab && document.querySelector(`.tab-btn[data-tab="${savedTab}"]`)) {
+        activateTab(savedTab);
+    }
+
+    // 1. Editor.js (shared init)
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const canEdit = {{ can_edit|yesno:"true,false" }};
+    initVibingEditor({
+        holderId: 'editorjs',
+        initialData: rawData,
+        wsUrl: `${wsScheme}://${window.location.host}/ws/project/${projectId}/`,
+        wsMessageType: 'project_update',
+        statusElementId: 'editor-status',
+        placeholder: 'Start writing your project documentation here...',
+        csrfToken: csrfToken,
+        readOnly: !canEdit
+    });
+
+    // 2. Backlog: Inline title editing (auto-save on blur)
+    document.querySelectorAll('.story-title-input').forEach(input => {
+        input.addEventListener('blur', function() {
+            const storyId = this.dataset.storyId;
+            const title = this.value.trim() || 'Untitled Story';
+            this.value = title;
+            fetch(`/api/story/${storyId}/title/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ title: title })
+            });
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+        });
+    });
+
+    // 3. Backlog: Story Points (auto-save on change)
+    document.querySelectorAll('.story-points-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const storyId = this.dataset.storyId;
+            fetch(`/api/story/${storyId}/points/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ story_points: this.value })
+            });
+        });
+    });
+
+    // 4. Backlog: Filtering
+    const stateFilter = document.getElementById('backlog-state-filter');
+    const assigneeFilter = document.getElementById('backlog-assignee-filter');
+    const storyRows = document.querySelectorAll('.story-row');
+
+    function filterBacklog() {
+        const stateVal = stateFilter ? stateFilter.value : '';
+        const assigneeVal = assigneeFilter ? assigneeFilter.value.toLowerCase() : '';
+
+        storyRows.forEach(row => {
+            const rowState = row.dataset.state || '';
+            const rowAssignees = (row.dataset.assignees || '').toLowerCase();
+            
+            const stateMatch = stateVal === '' || rowState === stateVal;
+            const assigneeMatch = assigneeVal === '' || rowAssignees.includes(assigneeVal);
+            
+            if (stateMatch && assigneeMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    if (stateFilter) stateFilter.addEventListener('change', filterBacklog);
+    if (assigneeFilter) assigneeFilter.addEventListener('input', filterBacklog);
+
+    // 5. Backlog: Drag and Drop Reordering
+    const backlogTableBody = document.querySelector('#backlog-table tbody');
+    let draggedRow = null;
+
+    if (canEdit && backlogTableBody) {
+        document.querySelectorAll('.story-row').forEach(row => {
+            row.addEventListener('dragstart', function(e) {
+                draggedRow = this;
+                this.style.opacity = '0.4';
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.innerHTML);
+            });
+
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.style.borderTop = '2px solid var(--primary-color)';
+            });
+
+            row.addEventListener('dragleave', function(e) {
+                this.style.borderTop = '';
+            });
+
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderTop = '';
+                if (draggedRow !== this) {
+                    const allRows = Array.from(backlogTableBody.querySelectorAll('.story-row'));
+                    const draggedIdx = allRows.indexOf(draggedRow);
+                    const droppedIdx = allRows.indexOf(this);
+                    
+                    if (draggedIdx < droppedIdx) {
+                        this.parentNode.insertBefore(draggedRow, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedRow, this);
+                    }
+                    
+                    // Save new order to backend
+                    const newOrder = Array.from(backlogTableBody.querySelectorAll('.story-row')).map(r => r.dataset.storyId);
+                    fetch(`/api/project/${projectId}/story-order/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify({ ordered_ids: newOrder })
+                    });
+                }
+            });
+
+            row.addEventListener('dragend', function() {
+                this.style.opacity = '1';
+                document.querySelectorAll('.story-row').forEach(r => r.style.borderTop = '');
+            });
+        });
+    }
+
+    // 4. Backlog: Custom Assignee Dropdowns
+    document.querySelectorAll('.assignee-dropdown .dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('selected');
+
+            const dropdown = this.closest('.assignee-dropdown');
+            const storyId = dropdown.dataset.storyId;
+            const selectedItems = dropdown.querySelectorAll('.dropdown-item.selected');
+            const selectedIds = Array.from(selectedItems).map(i => parseInt(i.dataset.userId));
+
+            // Update the visible tags
+            const tagsContainer = dropdown.querySelector('.selected-tags');
+            if (selectedIds.length === 0) {
+                tagsContainer.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.8rem;">Assign...</span>';
+            } else {
+                tagsContainer.innerHTML = Array.from(selectedItems)
+                    .map(i => `<span class="assignee-tag">${i.dataset.username}</span>`)
+                    .join(' ');
+            }
+
+            // Auto-save
+            fetch(`/api/story/${storyId}/assignees/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ user_ids: selectedIds })
+            });
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.assignee-dropdown.open').forEach(dd => {
+            if (!dd.contains(e.target)) dd.classList.remove('open');
+        });
+    });
+
+    // Kanban state color map
+    const kanbanStateColors = {
+        'TODO': { bg: 'var(--bg-color)', border: 'var(--border-color)', leftBorder: 'var(--text-secondary)' },
+        'Develop': { bg: 'rgba(33, 150, 243, 0.04)', border: 'rgba(33, 150, 243, 0.2)', leftBorder: '#2196F3' },
+        'In review': { bg: 'rgba(255, 152, 0, 0.04)', border: 'rgba(255, 152, 0, 0.2)', leftBorder: '#FF9800' },
+        'Request changes': { bg: 'rgba(244, 67, 54, 0.04)', border: 'rgba(244, 67, 54, 0.2)', leftBorder: '#F44336' },
+        'Done': { bg: 'rgba(76, 175, 80, 0.04)', border: 'rgba(76, 175, 80, 0.2)', leftBorder: '#4CAF50' }
+    };
+
+    function applyKanbanCardStyle(card, state) {
+        const colors = kanbanStateColors[state] || kanbanStateColors['TODO'];
+        card.style.backgroundColor = colors.bg;
+        card.style.border = `1px solid ${colors.border}`;
+        card.style.borderLeft = `3px solid ${colors.leftBorder}`;
+    }
+
+    // 5. Kanban: Drag & Drop
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+            card.classList.add('is-dragging');
+            card.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', () => {
+            card.classList.remove('is-dragging');
+            card.style.opacity = '1';
+        });
+    });
+
+    document.querySelectorAll('.kanban-items').forEach(container => {
+        container.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const draggingCard = document.querySelector('.is-dragging');
+            if (draggingCard) container.appendChild(draggingCard);
+        });
+
+        container.addEventListener('drop', e => {
+            e.preventDefault();
+            const draggingCard = document.querySelector('.is-dragging');
+            if (draggingCard) {
+                const newState = container.dataset.state;
+                const storyId = draggingCard.dataset.storyId;
+
+                // Update card colors to match new state
+                applyKanbanCardStyle(draggingCard, newState);
+
+                fetch(`/api/story/${storyId}/state/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ state: newState })
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

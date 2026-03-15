@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="page-title">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+    <p class="page-subtitle">Your workspaces and projects at a glance.</p>
+</div>
+
+<div class="cards-grid">
+    <!-- Create Workspace Card -->
+    <div class="card card-shadow">
+        <h3 class="section-title">✨ New Workspace</h3>
+        <p class="section-subtitle">Create a workspace to organize your projects and team.</p>
+        <form action="{% url 'create_workspace' %}" method="post" class="form-row">
+            {% csrf_token %}
+            <input type="text" name="name" placeholder="Workspace Name" required class="form-input form-input-sm">
+            <button type="submit" class="btn">Create</button>
+        </form>
+    </div>
+
+    <!-- Workspace Cards -->
+    {% for item in sidebar_workspaces %}
+    <div class="card card-shadow card-hover">
+        <div>
+            <h3 class="section-title">{{ item.workspace.name }}</h3>
+            <p style="color:var(--text-secondary); margin-bottom: 0.75rem; font-size: 0.85rem;">
+                {{ item.projects|length }} project{{ item.projects|length|pluralize }}
+                {% if item.role %}<span style="margin-left: 0.5rem; padding: 0.15rem 0.5rem; border: 1px solid var(--border-color); border-radius: 1rem; font-size: 0.7rem; font-weight: 600;">{{ item.role }}</span>{% endif %}
+            </p>
+            {% if item.projects %}
+            <ul style="list-style: none; padding: 0; margin: 0 0 1rem 0;">
+                {% for project in item.projects %}
+                <li style="padding: 0.35rem 0; font-size: 0.85rem;">
+                    <a href="{% url 'project_view' project.id %}" style="color: var(--text-secondary); text-decoration: none; transition: color 0.15s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">↳ {{ project.name }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        <a href="{% url 'workspace_view' item.workspace.id %}" class="btn btn-block">Open Workspace</a>
+    </div>
+    {% empty %}
+    <div class="card-dashed">
+        No workspaces yet. Create one to get started!
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
