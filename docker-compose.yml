@@ -6,7 +6,7 @@ services:
     image: ghcr.io/andre-moniz-morais/vibing:latest
     restart: unless-stopped # Permite ao container reiniciar sozinho quando o MacMini liga
     ports:
-      - "8000:8000"
+      - "8002:8000"
     env_file:
       - .env
     depends_on:
@@ -36,3 +36,7 @@ volumes:
   media_data:
   static_data:
   redis_data:
+
+networks:
+  docker_shared_network:
+    external: true
