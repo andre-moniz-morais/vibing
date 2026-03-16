@@ -10,9 +10,9 @@ services:
     depends_on:
       - redis
     volumes:
-      - media_data:/app/media
-      - static_data:/app/staticfiles
-      - workspaces_data:/app/workspaces
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./workspaces:/app/workspaces
       
   celery:
     # A mesma imagem que a app principal (o container vai usar o "command:" para iniciar como worker)
@@ -32,10 +32,9 @@ services:
       - redis_data:/data # Guarda as queues persistentes no servidor físico também
 
 volumes:
-  media_data:
-  static_data:
   redis_data:
 
 networks:
-  docker_shared_network:
+  default:
+    name: docker_shared_network
     external: true
