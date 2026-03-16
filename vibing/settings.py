@@ -34,6 +34,10 @@ DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = ['*']
 
+trusted_origin = env('CSRF_TRUSTED_ORIGIN', default=None)
+if trusted_origin:
+    CSRF_TRUSTED_ORIGINS = [trusted_origin]
+
 
 # Application definition
 
