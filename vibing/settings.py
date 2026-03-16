@@ -38,6 +38,10 @@ trusted_origin = env('CSRF_TRUSTED_ORIGIN', default=None)
 if trusted_origin:
     CSRF_TRUSTED_ORIGINS = [trusted_origin]
 
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+
 
 # Application definition
 
