@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     # Em vez de build local, puxamos a imagem do GitHub Container Registry (GHCR)
