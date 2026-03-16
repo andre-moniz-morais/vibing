@@ -12,6 +12,7 @@ services:
     volumes:
       - media_data:/app/media
       - static_data:/app/staticfiles
+      - workspaces_data:/app/workspaces
       
   celery:
     # A mesma imagem que a app principal (o container vai usar o "command:" para iniciar como worker)
