@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build stage (Instalar Dependências)
 # ==========================================
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 # Variáveis de ambiente úteis
 ENV PYTHONDONTWRITEBYTECODE=1
