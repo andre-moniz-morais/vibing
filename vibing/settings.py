@@ -34,13 +34,22 @@ DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = ['*']
 
+# Security and Protocol settings
+# Set ACCOUNT_DEFAULT_HTTP_PROTOCOL to 'https' if not DEBUG, or if explicitly requested via environment variable.
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = env('ACCOUNT_DEFAULT_HTTP_PROTOCOL', default='https' if not DEBUG else 'http')
+
+# Secure Proxy SSL Header (needed for reverse proxies like Nginx/Cloudflare that terminate SSL)
+# We set this if we're not in DEBUG mode or if FORCE_HTTPS is enabled.
+if not DEBUG or env.bool('FORCE_HTTPS', default=False):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# CSRF Trusted Origins
 trusted_origin = env('CSRF_TRUSTED_ORIGIN', default=None)
 if trusted_origin:
-    CSRF_TRUSTED_ORIGINS = [trusted_origin]
-
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+    # Support multiple origins separated by comma
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in trusted_origin.split(',')]
 
 
 # Application definition
