@@ -44,6 +44,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     netcat-traditional \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia o Virtual Environment compilado perfeitamente da stage anterior (builder)

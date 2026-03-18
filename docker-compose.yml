@@ -1,8 +1,7 @@
 services:
   web:
-    # Em vez de build local, puxamos a imagem do GitHub Container Registry (GHCR)
     image: ghcr.io/andre-moniz-morais/vibing:latest
-    restart: unless-stopped # Permite ao container reiniciar sozinho quando o MacMini liga
+    restart: unless-stopped
     ports:
       - "8002:8000"
     env_file:
@@ -15,7 +14,6 @@ services:
       - ./workspaces:/app/workspaces
       
   celery:
-    # A mesma imagem que a app principal (o container vai usar o "command:" para iniciar como worker)
     image: ghcr.io/andre-moniz-morais/vibing:latest
     restart: unless-stopped
     command: celery -A vibing worker -l info
@@ -29,7 +27,7 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     volumes:
-      - redis_data:/data # Guarda as queues persistentes no servidor físico também
+      - redis_data:/data
 
 volumes:
   redis_data:
